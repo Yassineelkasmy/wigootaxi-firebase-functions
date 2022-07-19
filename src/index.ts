@@ -26,8 +26,11 @@ export const ringNearbyDrivers = functions.firestore
         .get();
 
       const userData = userDoc.data();
+
       if (userData) {
-        candidatesUids.forEach(async (uid) => {
+        var candidatePicked = false;
+        for (let n = 0; n < candidatesUids.length; n++) {
+          const uid = candidatesUids[n];
           const driverDoc = await admin
             .firestore()
             .collection("drivers")
@@ -43,7 +46,7 @@ export const ringNearbyDrivers = functions.firestore
                 user: { ...userData, id: userDoc.id },
               },
             });
-            admin.messaging().sendToTopic(uid, {
+            await admin.messaging().sendToTopic(uid, {
               notification: {
                 content_available: "true",
                 click_action: "FLUTTER_NOTIFICATION_CLICK",
@@ -57,16 +60,21 @@ export const ringNearbyDrivers = functions.firestore
               },
 
               data: {
-                // type: "league",
+                type: "booking",
+                username: userData.username,
+                place: docData.start_name,
               },
             });
 
-            await delay(10000);
+            //Wait for 10s as a timeout for driver to accept the ride
+            await delay(15000);
+
             await admin
               .firestore()
               .collection("drivers")
               .doc(uid)
               .update({ booking_call: null, booking: null });
+
             const rideDoc = await admin
               .firestore()
 
@@ -74,11 +82,24 @@ export const ringNearbyDrivers = functions.firestore
               .doc(snap.id)
               .get();
             const rideDocData = rideDoc.data();
-            if (rideDocData && rideDocData.booking_call) {
-              return;
+
+            // Cheking if the driver has acctualy accepted the ride
+            if (rideDocData && rideDocData.driverId) {
+              candidatePicked = true;
+              await admin.firestore().collection("rides").doc(snap.id).set({
+                driverUid: driverDoc.id,
+                userUid: userDoc.id,
+                start: docData.start,
+                destination: docData.destination,
+              });
+              break;
             }
           }
-        });
+        }
+        //If we reached here that means no drivet has accepted the ride so we must cancell it
+        if (!candidatePicked) {
+          snap.ref.update({ cancelled: true });
+        }
       }
     }
   });
