@@ -91,6 +91,7 @@ export const ringNearbyDrivers = functions.firestore
                 userUid: userDoc.id,
                 start: docData.start,
                 destination: docData.destination,
+                driverStart: docData.driverStart,
               });
               break;
             }
