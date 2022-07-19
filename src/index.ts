@@ -105,6 +105,10 @@ export const ringNearbyDrivers = functions.firestore
     }
   });
 
+export const watchRide = functions.firestore
+  .document("rides")
+  .onUpdate((snap) => {});
+
 function delay(milliseconds: number) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
