@@ -18,6 +18,9 @@ export const ringNearbyDrivers = functions.firestore
     if (docData != null) {
       const candidatesUids: string[] = docData.candidatesUids;
       const dest_name = docData.dest_name;
+      const start_name = docData.start_name;
+      const duration = docData.durtext;
+      const distance = docData.disttext;
       const userUid = docData.userUid;
       const userDoc = await admin
         .firestore()
@@ -40,6 +43,7 @@ export const ringNearbyDrivers = functions.firestore
           if (driverData != undefined) {
             await driverDoc.ref.update({
               booking_call: snap.id,
+              bookingUserUid: userDoc.id,
               booking: {
                 ...docData,
                 id: snap.id,
@@ -62,7 +66,10 @@ export const ringNearbyDrivers = functions.firestore
               data: {
                 type: "booking",
                 username: userData.username,
-                place: docData.start_name,
+                start: start_name,
+                destination: dest_name,
+                duration: duration,
+                distance: distance,
               },
             });
 
@@ -84,14 +91,21 @@ export const ringNearbyDrivers = functions.firestore
             const rideDocData = rideDoc.data();
 
             // Cheking if the driver has acctualy accepted the ride
+            console.log(docData.driverStart);
             if (rideDocData && rideDocData.driverId) {
               candidatePicked = true;
+              const updatedBookingDoc = await admin
+                .firestore()
+                .collection("booking")
+                .doc(snap.id)
+                .get();
+              const driverStart = updatedBookingDoc.data()!.driverStart;
               await admin.firestore().collection("rides").doc(snap.id).set({
                 driverUid: driverDoc.id,
                 userUid: userDoc.id,
                 start: docData.start,
                 destination: docData.destination,
-                driverStart: docData.driverStart,
+                driverStart: driverStart,
               });
               break;
             }
@@ -105,10 +119,35 @@ export const ringNearbyDrivers = functions.firestore
     }
   });
 
-export const watchRide = functions.firestore
-  .document("rides")
-  .onUpdate((snap) => {});
-
 function delay(milliseconds: number) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
+
+export const notifyDriverArrivalhRide = functions.firestore
+  .document("rides")
+  .onUpdate(async (snap) => {
+    const beforeData = snap.before.data();
+    const afterData = snap.after.data();
+
+    if (!beforeData.driverArrived && afterData.driverArrived) {
+      const userUid = afterData.userUid;
+      const bookData = await (
+        await admin.firestore().collection("booking").doc(snap.after.id).get()
+      ).data();
+
+      const start_name = bookData!.start_name;
+      admin.messaging().sendToTopic(userUid, {
+        notification: {
+          content_available: "true",
+          click_action: "FLUTTER_NOTIFICATION_CLICK",
+          badge: "1",
+          title: "Chauffeur arrivé!",
+          body: "Le chauffeur vous attend au " + start_name,
+          sound: "default",
+          priority: "high",
+          icon: "",
+          type: "Editorial",
+        },
+      });
+    }
+  });
