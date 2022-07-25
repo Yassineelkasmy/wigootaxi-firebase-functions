@@ -106,6 +106,8 @@ export const ringNearbyDrivers = functions.firestore
                 start: docData.start,
                 destination: docData.destination,
                 driverStart: driverStart,
+                driverPickedAt: admin.firestore.FieldValue.serverTimestamp(),
+                path: [],
               });
               break;
             }
@@ -119,12 +121,8 @@ export const ringNearbyDrivers = functions.firestore
     }
   });
 
-function delay(milliseconds: number) {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
-}
-
 export const notifyDriverArrivalhRide = functions.firestore
-  .document("rides")
+  .document("rides/{id}")
   .onUpdate(async (snap) => {
     const beforeData = snap.before.data();
     const afterData = snap.after.data();
@@ -151,3 +149,6 @@ export const notifyDriverArrivalhRide = functions.firestore
       });
     }
   });
+function delay(milliseconds: number) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
