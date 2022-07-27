@@ -108,6 +108,7 @@ export const ringNearbyDrivers = functions.firestore
                 driverStart: driverStart,
                 driverPickedAt: admin.firestore.FieldValue.serverTimestamp(),
                 path: [],
+                pathToDestination: [],
               });
               break;
             }
