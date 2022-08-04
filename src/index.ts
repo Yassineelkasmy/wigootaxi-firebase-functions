@@ -2,13 +2,6 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 
 admin.initializeApp();
-// // Start writing Firebase Functions
-// // https://firebase.google.com/docs/functions/typescript
-//
-// export const helloWorld = functions.https.onRequest((request, response) => {
-//   functions.logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
 
 export const ringNearbyDrivers = functions.firestore
   .document("booking/{id}")
@@ -23,6 +16,7 @@ export const ringNearbyDrivers = functions.firestore
       const distance = docData.disttext;
       const userUid = docData.userUid;
       const userDoc = await admin
+
         .firestore()
         .collection("users")
         .doc(userUid)
@@ -50,6 +44,7 @@ export const ringNearbyDrivers = functions.firestore
                 user: { ...userData, id: userDoc.id },
               },
             });
+
             await admin.messaging().sendToTopic(uid, {
               notification: {
                 content_available: "true",
@@ -67,9 +62,13 @@ export const ringNearbyDrivers = functions.firestore
                 type: "booking",
                 username: userData.username,
                 start: start_name,
-                destination: dest_name,
+                startLat: docData.startLat.toString(),
+                startLng: docData.startLng.toString(),
+                driverLat: driverData.lat.toString(),
+                driverLng: driverData.lng.toString(),
                 duration: duration,
                 distance: distance,
+                destination: dest_name,
               },
             });
 
@@ -106,6 +105,10 @@ export const ringNearbyDrivers = functions.firestore
                 start: docData.start,
                 destination: docData.destination,
                 driverStart: driverStart,
+                distance: docData.distance,
+                disttext: docData.disttext,
+                duration: docData.duration,
+                durtext: docData.durtext,
                 driverPickedAt: admin.firestore.FieldValue.serverTimestamp(),
                 path: [],
                 pathToStart: [],
