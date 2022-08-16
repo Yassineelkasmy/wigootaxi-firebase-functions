@@ -1,5 +1,7 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+// const FieldValue = require("firebase-admin").firestore.FieldValue;
+import { FieldValue } from "firebase-admin/firestore";
 
 admin.initializeApp();
 
@@ -103,6 +105,8 @@ export const ringNearbyDrivers = functions.firestore
                 driverUid: driverDoc.id,
                 userUid: userDoc.id,
                 start: docData.start,
+                start_name: start_name,
+                dest_name: dest_name,
                 destination: docData.destination,
                 driverStart: driverStart,
                 distance: docData.distance,
@@ -115,9 +119,14 @@ export const ringNearbyDrivers = functions.firestore
               });
               break;
             }
+            admin
+              .firestore()
+              .collection("drivers")
+              .doc(driverDoc.id)
+              .update({ ignored: FieldValue.increment(1) });
           }
         }
-        //If we reached here that means no drivet has accepted the ride so we must cancell it
+        //If we reached here that means no driver has accepted the ride so we must cancell it
         if (!candidatePicked) {
           snap.ref.update({ cancelled: true });
         }
@@ -153,6 +162,37 @@ export const notifyDriverArrivalhRide = functions.firestore
       });
     }
   });
+
+export const saveRides = functions.firestore
+  .document("rides/{id}")
+  .onUpdate(async (snap) => {
+    const docData = snap.after.data();
+    if (
+      docData.cancelledByUser ||
+      docData.cancelledByDriver ||
+      docData.finished
+    ) {
+      const userUid = docData.userUid;
+      const driverUid = docData.driverUid;
+
+      admin
+        .firestore()
+        .collection("users")
+        .doc(userUid)
+        .collection("rides")
+        .doc(snap.after.id)
+        .set(docData);
+      admin
+        .firestore()
+        .collection("drivers")
+        .doc(driverUid)
+        .collection("rides")
+        .doc(snap.after.id)
+        .set(docData);
+    }
+  });
+
+//
 function delay(milliseconds: number) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
