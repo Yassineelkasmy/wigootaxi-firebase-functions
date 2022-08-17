@@ -176,10 +176,11 @@ export const saveRides = functions.firestore
   .document("rides/{id}")
   .onUpdate(async (snap) => {
     const docData = snap.after.data();
+    const beforeData = snap.before.data();
     if (
-      docData.cancelledByUser ||
-      docData.cancelledByDriver ||
-      docData.finished
+      docData.cancelledByUser != beforeData.cancelledByUser ||
+      docData.cancelledByDriver != beforeData.cancelledByDriver ||
+      docData.finished != beforeData.finished
     ) {
       const userUid = docData.userUid;
       const driverUid = docData.driverUid;
@@ -259,7 +260,6 @@ export const saveRides = functions.firestore
     }
   });
 
-//
 function delay(milliseconds: number) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
