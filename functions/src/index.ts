@@ -6,7 +6,7 @@ admin.initializeApp();
 
 export const ringNearbyDrivers = functions.firestore
   .document("booking/{id}")
-  .onCreate(async (snap, _) => {
+  .onCreate(async (snap) => {
     const docData = snap.data();
     const metricsDoc = await admin
       .firestore()
