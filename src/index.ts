@@ -1,13 +1,12 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
-// const FieldValue = require("firebase-admin").firestore.FieldValue;
 import { FieldValue } from "firebase-admin/firestore";
 
 admin.initializeApp();
 
 export const ringNearbyDrivers = functions.firestore
   .document("booking/{id}")
-  .onCreate(async (snap, context) => {
+  .onCreate(async (snap, _) => {
     const docData = snap.data();
     const metricsDoc = await admin
       .firestore()
@@ -16,7 +15,6 @@ export const ringNearbyDrivers = functions.firestore
       .get();
     const metricsData = metricsDoc.data();
 
-    // var chosenDriver = "";
     if (docData != null && metricsData) {
       const candidatesUids: string[] = docData.candidatesUids;
       const dest_name = docData.dest_name;
