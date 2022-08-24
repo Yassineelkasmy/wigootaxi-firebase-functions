@@ -218,7 +218,7 @@ export const saveRides = functions.firestore
           (finishedAt.toDate().getTime() - startedAt.toDate().getTime()) / 1000
         );
 
-        admin
+        await admin
           .firestore()
           .collection("drivers")
           .doc(driverUid)
@@ -271,6 +271,71 @@ export const saveRides = functions.firestore
           .update({
             ridesCancelledByUser: FieldValue.increment(1),
           });
+      }
+    }
+  });
+
+//Save drivers for user
+export const saveDriversInUser = functions.firestore
+  .document("rides/{id}")
+  .onUpdate(async (snap, _) => {
+    const docData = snap.after.data();
+    const beforeData = snap.before.data();
+
+    if (docData.finished != beforeData.finished) {
+      if (docData.finished) {
+        const userUid = docData.userUid;
+        const driverUid = docData.driverUid;
+        const driverDoc = await admin
+          .firestore()
+          .collection("drivers")
+          .doc(driverUid)
+          .get();
+        // const userDoc = await admin
+        //   .firestore()
+        //   .collection("users")
+        //   .doc(userUid)
+        //   .get();
+        const driverData = driverDoc.data()!;
+        // const userData = userDoc.data()!;
+        const drivers = await admin
+          .firestore()
+          .collection("users")
+          .doc(userUid)
+          .collection("drivers")
+          .where("driverId", "==", driverUid)
+          .get();
+        if (drivers.docs.length > 0) {
+          await admin
+            .firestore()
+            .collection("users")
+            .doc(userUid)
+            .collection("drivers")
+            .doc(driverUid)
+            .update({
+              rides: FieldValue.increment(1),
+              username: driverData.username,
+              driverId: driverUid,
+              phone: driverData.phone,
+              lastRideTs: FieldValue.serverTimestamp(),
+              ridesIds: FieldValue.arrayUnion(snap.after.id),
+            });
+        } else {
+          await admin
+            .firestore()
+            .collection("users")
+            .doc(userUid)
+            .collection("drivers")
+            .doc(driverUid)
+            .set({
+              rides: FieldValue.increment(1),
+              username: driverData.username,
+              phone: driverData.phone,
+              driverId: driverUid,
+              lastRideTs: FieldValue.serverTimestamp(),
+              ridesIds: FieldValue.arrayUnion(snap.after.id),
+            });
+        }
       }
     }
   });
