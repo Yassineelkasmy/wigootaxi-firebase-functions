@@ -213,8 +213,9 @@ export const saveRides = functions.firestore
         const driverRevenue = totalPrice - tva - revenue;
         const startedAt = docData.startedAt as Timestamp;
         const finishedAt = docData.finishedAt as Timestamp;
-        const totalDuration =
-          (finishedAt.toDate().getTime() - startedAt.toDate().getTime()) / 1000;
+        const totalDuration = Math.floor(
+          (finishedAt.toDate().getTime() - startedAt.toDate().getTime()) / 1000
+        );
 
         admin
           .firestore()
