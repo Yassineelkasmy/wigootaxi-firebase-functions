@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 
 admin.initializeApp();
 
@@ -211,6 +211,10 @@ export const saveRides = functions.firestore
         const tva = totalPrice * tvaPercentage;
         const revenue = totalPrice * revenuePercentage;
         const driverRevenue = totalPrice - tva - revenue;
+        const startedAt = docData.startedAt as Timestamp;
+        const finishedAt = docData.finishedAt as Timestamp;
+        const totalDuration =
+          (finishedAt.toDate().getTime() - startedAt.toDate().getTime()) / 1000;
 
         admin
           .firestore()
@@ -222,6 +226,7 @@ export const saveRides = functions.firestore
             tva: tva,
             revenue: revenue,
             driverRevenue: driverRevenue,
+            totalDuration: totalDuration,
           });
 
         admin
@@ -234,6 +239,16 @@ export const saveRides = functions.firestore
             tvaToPay: FieldValue.increment(tva),
             driverRevenue: FieldValue.increment(driverRevenue),
             ridesFinished: FieldValue.increment(1),
+          });
+
+        admin
+          .firestore()
+          .collection("users")
+          .doc(userUid)
+          .collection("rides")
+          .doc(snap.after.id)
+          .update({
+            totalDuration: totalDuration,
           });
       }
       if (docData.cancelledByDriver) {
