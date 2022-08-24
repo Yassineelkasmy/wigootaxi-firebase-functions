@@ -123,6 +123,7 @@ export const ringNearbyDrivers = functions.firestore
                 driverPickedAt: admin.firestore.FieldValue.serverTimestamp(),
                 path: [],
                 pathToStart: [],
+                ts: FieldValue.serverTimestamp(),
               });
               break;
             }
