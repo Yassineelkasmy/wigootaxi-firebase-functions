@@ -125,9 +125,24 @@ export const ringNearbyDrivers = functions.firestore
                 pathToStart: [],
                 ts: docData.ts,
               });
+
+              //set the current ride and driver for the user
+              await admin.firestore().collection("users").doc(userUid).update({
+                currentRideId: snap.id,
+                currentDriverId: driverDoc.id,
+              });
+              await admin
+                .firestore()
+                .collection("drivers")
+                .doc(driverDoc.id)
+                .update({
+                  currentRideId: snap.id,
+                  currentUserId: userUid,
+                });
+
               break;
             }
-            admin
+            await admin
               .firestore()
               .collection("drivers")
               .doc(driverDoc.id)
@@ -184,14 +199,26 @@ export const saveRides = functions.firestore
       const userUid = docData.userUid;
       const driverUid = docData.driverUid;
 
-      admin
+      //remove current ride and user&driver infos from user and driver
+
+      await admin.firestore().collection("users").doc(userUid).update({
+        currentRideId: null,
+        currentDriverId: null,
+      });
+
+      await admin.firestore().collection("drivers").doc(driverUid).update({
+        currentRideId: null,
+        currentUserId: null,
+      });
+
+      await admin
         .firestore()
         .collection("users")
         .doc(userUid)
         .collection("rides")
         .doc(snap.after.id)
         .set(docData);
-      admin
+      await admin
         .firestore()
         .collection("drivers")
         .doc(driverUid)
@@ -231,7 +258,7 @@ export const saveRides = functions.firestore
             totalDuration: totalDuration,
           });
 
-        admin
+        await admin
           .firestore()
           .collection("drivers")
           .doc(driverUid)
@@ -243,7 +270,7 @@ export const saveRides = functions.firestore
             ridesFinished: FieldValue.increment(1),
           });
 
-        admin
+        await admin
           .firestore()
           .collection("users")
           .doc(userUid)
@@ -254,7 +281,7 @@ export const saveRides = functions.firestore
           });
       }
       if (docData.cancelledByDriver) {
-        admin
+        await admin
           .firestore()
           .collection("drivers")
           .doc(driverUid)
@@ -264,7 +291,7 @@ export const saveRides = functions.firestore
       }
 
       if (docData.cancelledByUser) {
-        admin
+        await admin
           .firestore()
           .collection("drivers")
           .doc(driverUid)
